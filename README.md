@@ -15,6 +15,14 @@ The task code follows the MicroDuck recipes, but the robot does not:
 - The MJCF and meshes use the XgoDuck model (`src/mjlab_microduck/robot/xgoduck/`).
 - Actuators are the HLS1910 BAM model in `src/mjlab_microduck/robot/xgoduck/params/1910_m6.json`, not the MicroDuck XL330.
 
+SitStand loads a measured mass calibration from
+`src/mjlab_microduck/robot/xgoduck/sitstand_mass_calibration.json`: 870 g total,
+including 275 g head/neck. The trunk is provisionally 307 g with its existing
+CoM; the measured 100 g battery is included in the total, not added separately.
+This calibration is applied by `get_sitstand_spec()` after XML loading, so raw
+XML viewers still show the legacy masses. Other tasks retain their baseline.
+See [training_plan_1120.md](training_plan_1120.md) for assumptions and progress.
+
 ## Install
 
 You need a CUDA GPU, Python 3.12, and [uv](https://docs.astral.sh/uv/).
