@@ -20,6 +20,7 @@ from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
 from mjlab_microduck.actuator import BacklashEncoderBamActuatorCfg, FrictionDRBamActuatorCfg
+from mjlab_microduck.robot.xgoduck_mass_calibration import calibrate_sitstand_mass
 
 
 _ROBOT_DIR: Path = Path(os.path.dirname(__file__)) / "xgoduck"
@@ -186,7 +187,11 @@ XGODUCK_STANDUP_ROBOT_CFG = EntityCfg(
 
 
 def get_sitstand_spec() -> mujoco.MjSpec:
-    return _disable_unnamed_geoms(mujoco.MjSpec.from_file(str(XGODUCK_SITSTAND_BACKLASH_XML)))
+    """Full-contact model with measured 870 g / 275 g head-neck calibration."""
+    spec = _disable_unnamed_geoms(
+        mujoco.MjSpec.from_file(str(XGODUCK_SITSTAND_BACKLASH_XML))
+    )
+    return calibrate_sitstand_mass(spec)
 
 
 # SitStand needs full-body contacts with the same ±1.5° gear play as Walk.

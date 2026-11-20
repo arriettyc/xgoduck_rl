@@ -7,6 +7,11 @@ used by the tasks are remapped (yaw2roll, neck, jaw_soft, bearing_roll, ...).
 
 SW2URDF masses are STL volume × 1000 kg/m³. CAD_MASSES replace them and
 inertia is scaled with mass. Trunk CoM uses the SolidWorks mass-properties origin.
+
+These generated files remain the legacy baseline. SitStand's measured mass
+calibration is applied afterward by get_sitstand_spec(), using
+sitstand_mass_calibration.json. Do not bake that calibration into shared XML;
+the loader reapplies the measured group totals after regeneration.
 """
 
 from __future__ import annotations

@@ -9,14 +9,14 @@ Train reliable stand → sit → stand transitions on the measured XgoDuck hardw
 - [x] Review local SitStand configuration, robot physics, inference conventions, and upstream Microduck reference.
 - [x] Record hardware measurements: **870 g total**, **275 g complete head + neck**, **100 g battery**.
 - [x] Confirm that head geometry and battery mounting position are intended to match this repository's setup.
-- [ ] **1. Update and validate the mass model — NEXT.**
-- [ ] 2. Evaluate the existing checkpoint on the calibrated model.
+- [x] **1. Update and validate the nominal mass model** (provisional lumped trunk/battery allocation).
+- [ ] **2. Evaluate the existing checkpoint on the calibrated model — NEXT.**
 - [ ] 3. Establish a stable XgoDuck seated target and feasible transition.
 - [ ] 4. Fine-tune nominal SitStand transitions.
 - [ ] 5. Adjust transition rewards only where diagnostics show a conflict.
 - [ ] 6. Add robustness and validate deployment on hardware.
 
-Status verified from repository files on 2026-11-20: **the mass update has not been applied**. The values below are a baseline and proposed calibration, not completed changes. No training run has been launched as part of this plan.
+Status: **the nominal mass update is applied and validated**. SitStand's loader now applies the measured targets after loading the legacy XML. The battery's separate inertial contribution remains unresolved and is explicitly represented through a provisional lumped trunk model. No training run or checkpoint behavior evaluation has been performed as part of this stage.
 
 ## 1. Update and validate the mass model
 
@@ -24,7 +24,7 @@ Status verified from repository files on 2026-11-20: **the mass update has not b
 
 The final **275 g head + neck measurement supersedes the earlier 270 g head-only estimate**. Total robot mass includes the installed battery. Measurements are approximate.
 
-| Quantity | Old/current simulator | Measured target | Difference |
+| Quantity | Old simulator | Applied nominal calibration / measured target | Difference |
 |---|---:|---:|---:|
 | Complete robot | 790.9 g | 870 g | +79.1 g |
 | Complete head + neck | 252.9 g | 275 g | +22.1 g (+8.74%) |
@@ -33,11 +33,11 @@ The final **275 g head + neck measurement supersedes the earlier 270 g head-only
 
 Baseline model: `src/mjlab_microduck/robot/xgoduck/robot_allcollisions_backlash.xml`, selected by `get_sitstand_spec()` in `src/mjlab_microduck/robot/xgoduck_constants.py`.
 
-### Proposed head/neck allocation
+### Applied head/neck allocation
 
-Initially preserve the existing mass proportions, body-frame centers of mass, and geometry. Multiply each head/neck body's mass and inertia tensor by **275 / 252.9 ≈ 1.087386**. This is an initial identification assumption; it does not establish the true component mass distribution or inertia.
+The loader preserves the existing mass proportions, body-frame centers of mass, and geometry. Each head/neck body's mass and inertia tensor is multiplied by **275 / 252.9 ≈ 1.087386** for the current XML. This is an initial identification assumption; it does not establish the true component mass distribution or inertia.
 
-| Model body | Old mass | Proposed mass, approximately |
+| Model body | Old mass | Applied mass, approximately |
 |---|---:|---:|
 | `neck` | 45.312 g | 49.272 g |
 | `neck_pitch` | 3.882 g | 4.221 g |
@@ -49,23 +49,27 @@ The combined measured assembly is mapped to these four bodies for the initial ca
 
 ### Trunk and battery allocation
 
-The current trunk mass is **250 g**. After the head/neck correction, total mass would be **813 g**, leaving **57 g** to reach 870 g.
+The old trunk mass was **250 g**. After the head/neck correction alone, total mass would be **813 g**, leaving **57 g** to reach 870 g. The applied provisional calibration puts that residual into the trunk: **307 g**, with mass and inertia scaled by **1.228**. Trunk CoM remains `(-0.012276, -0.00001265566, -0.01955284246)` m in its body frame.
 
-Inspect the source CAD/URDF and trunk inertial assumptions to determine how much of the 100 g battery is already included. There is no separately named battery body in the reviewed model. Unchanged mounting position does not establish whether its mass is already represented correctly.
+Inspection of the source CAD CSV, URDF, converter, and checked-in XML did not establish how much of the 100 g battery was already included. There is no separately named battery body in the reviewed model. Unchanged mounting position does not establish whether its mass is already represented correctly. No separate battery mass is added.
 
-If no better component information is available, a provisional model can keep other links unchanged and increase the trunk from **250 g to 307 g**. Clearly label this as a lumped residual-mass estimate. It matches total mass but does not identify the rear battery's contribution to trunk CoM and pitch inertia. Validate sensitivity to plausible rearward CoM/inertia changes before relying on it for transfer.
+This is a **lumped residual-mass estimate**, keeping the other links unchanged. It matches total mass but does not identify the rear battery's contribution to trunk CoM and pitch inertia. Validate sensitivity to plausible rearward CoM/inertia changes before relying on it for transfer.
 
 If representing the battery explicitly, subtract any existing battery contribution from the trunk before adding the measured battery at its mounting position. Combine inertias using the parallel-axis theorem where needed; avoid double counting.
 
 ### Implementation and completion checklist
 
-- [ ] Establish a single calibration source for the SitStand mass/inertia values.
-- [ ] Set the combined head/neck mass to 275 g and scale its inertias consistently.
-- [ ] Resolve or explicitly document the provisional trunk/battery allocation; obtain 870 g total.
-- [ ] Reconcile generation logic: `convert_from_urdf.py` currently normalizes total mass to 0.8 kg and has trunk assumptions differing from the checked-in model. Regeneration must preserve the chosen calibration.
-- [ ] Keep unrelated task physics changes out of the initial SitStand experiment; document any intentionally shared model changes.
-- [ ] Compile the exact model used by the task and verify total mass, component masses, valid inertias, and unchanged geometry.
-- [ ] Record actual applied values and affected files here, then check off stage 1.
+- [x] Establish a single calibration source: `src/mjlab_microduck/robot/xgoduck/sitstand_mass_calibration.json`.
+- [x] Set the combined head/neck mass to 275 g and scale its inertias consistently.
+- [x] Explicitly document the provisional 307 g trunk/battery allocation; obtain 870 g total.
+- [x] Reconcile generation logic through a post-load calibration: `convert_from_urdf.py` retains the 0.8 kg legacy baseline, while `get_sitstand_spec()` reapplies the measured group/total targets after loading generated XML. Regeneration cannot silently remove the calibration; different regenerated link masses will change the residual trunk budget and require revalidation.
+- [x] Keep calibration scoped to SitStand; registered Walk, StandUp, and Roulade retain their 790.9 g baseline.
+- [x] Compile registered Flat/Rough, train/play SitStand model factories and verify mass targets, valid inertias, and preserved geometry.
+- [x] Record actual applied values and affected files here, then check off stage 1.
+
+Implementation: `src/mjlab_microduck/robot/xgoduck_mass_calibration.py` reads the calibration file, scales full or diagonal inertia tensors with mass, and assigns the remaining mass to the trunk. `xgoduck_constants.py:get_sitstand_spec()` applies it. Shared XML is not rewritten; opening raw XML directly still shows baseline masses. The converter documentation and repository README explain this distinction.
+
+Validation: `.venv/bin/python scripts/validate_sitstand_mass.py -v` (four checks passed) checks measured totals; preserved link/geom/joint/site geometry and inertial CoM/axes; positive principal inertias and triangle inequalities; unchanged non-calibrated link masses; repeat application; diagonal/full tensor handling; invalid mass-budget rejection; and registered task isolation. This validates the nominal model, not policy performance. Existing startup mass randomization still produces variations around the nominal calibrated model.
 
 ## 2. Evaluate the existing checkpoint on the calibrated model
 
@@ -154,3 +158,4 @@ Proposed acceptance targets:
 | Date | Completed work | Next action |
 |---|---|---|
 | 2026-11-20 | Reviewed configuration and upstream reference; recorded final mass measurements; verified mass calibration is still pending; created this plan. | Apply and validate stage 1 mass calibration, documenting trunk/battery assumptions. |
+| 2026-11-20 | Applied and validated SitStand-only calibration: 870 g total, 275 g head/neck, provisional 307 g trunk; scaled inertias and retained geometry/CoM positions. | Stage 2: identify the tested checkpoint/runtime and evaluate both holds and both transitions on the calibrated model. |

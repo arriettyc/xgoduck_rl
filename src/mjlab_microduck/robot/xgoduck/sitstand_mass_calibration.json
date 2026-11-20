@@ -1,0 +1,9 @@
+{
+  "measurement_date": "2026-11-20",
+  "total_mass_kg": 0.870,
+  "head_neck_mass_kg": 0.275,
+  "battery_mass_kg": 0.100,
+  "head_neck_bodies": ["neck", "neck_pitch", "yaw_roll_motion", "jaw_soft"],
+  "residual_body": "trunk_base",
+  "allocation_note": "Battery is included in total mass, not added separately. Unresolved non-head mass is lumped into trunk_base at its existing CoM; inertia scales with mass. This does not identify the battery CoM or pitch inertia."
+}
