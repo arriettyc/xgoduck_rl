@@ -10,13 +10,14 @@ Train reliable stand → sit → stand transitions on the measured XgoDuck hardw
 - [x] Record hardware measurements: **870 g total**, **275 g complete head + neck**, **100 g battery**.
 - [x] Confirm that head geometry and battery mounting position are intended to match this repository's setup.
 - [x] **1. Update and validate the nominal mass model** (provisional lumped trunk/battery allocation).
-- [ ] **2. Evaluate the existing checkpoint on the calibrated model — NEXT.**
+- [x] **2. Evaluate the bundled existing policy on the calibrated model** (simulation baseline and runtime source audit).
+- [ ] **2b. Resolve the remaining sim-to-hardware mismatch — NEXT:** verify installed policy/settings, replay runtime sensing, and test rear-CoM sensitivity before selecting fine-tuning changes.
 - [ ] 3. Establish a stable XgoDuck seated target and feasible transition.
 - [ ] 4. Fine-tune nominal SitStand transitions.
 - [ ] 5. Adjust transition rewards only where diagnostics show a conflict.
 - [ ] 6. Add robustness and validate deployment on hardware.
 
-Status: **the nominal mass update is applied and validated**. SitStand's loader now applies the measured targets after loading the legacy XML. The battery's separate inertial contribution remains unresolved and is explicitly represented through a provisional lumped trunk model. No training run or checkpoint behavior evaluation has been performed as part of this stage.
+Status: **the nominal mass update and simulation baseline evaluation are complete**. The existing bundled policy succeeds at the tested endpoints under both mass models, but transitions are fast and the hardware backward fall is not reproduced. The battery's separate inertial contribution remains unresolved and is explicitly represented through a provisional lumped trunk model. No fine-tuning or hardware intervention has been performed.
 
 ## 1. Update and validate the mass model
 
@@ -90,6 +91,61 @@ Before using `scripts/infer_policy.py` as a deployment rehearsal, correct its Mi
 
 **Completion gate:** a reproducible baseline for all four behaviors, with failure mode and runtime consistency documented.
 
+### Completed baseline evaluation — 2026-11-20
+
+**Policy identification.** The local `model_0.pt` and `model_4.pt` are from a five-iteration smoke run and are not the trained baseline. Instead, evaluated `python/xgoduck_sitstand.onnx` bundled with runtime **v0.3.6**, commit `30925cd1f8e5e78c5bbbf97efb89cf2f61182aee`. Its metadata identifies a SitStand training run ending in `model_1250.pt`. The exact training recipe and corresponding trainable `.pt` are not available locally. The model installed on the physical duck has not been hash-verified; the bundled default is the candidate baseline.
+
+SitStand ONNX SHA-256: `0edc351836a1c7e78728bac37d69f1108d0ee14277f5f85da6fe7ade988f949d`.
+
+**Method.** `scripts/evaluate_sitstand.py` runs the original fixed-batch ONNX in the registered task's BAM/backlash physics, without training. For each configuration, 32 seeded resets start standing and 32 start seated. Each rollout holds its initial posture for 2 s, commands the opposite posture for 6 s, then commands the initial posture for 6 s. Tests retain training observation delays, use ideal projected gravity without observation noise/misalignment, and fix nominal voltage to 7.7 V, sag gain to 0.1, actuator delay to 15 ms, and foot friction to 0.5. Reset perturbations are small: ±0.01 rad standing joint offsets, 0.01 rad Gaussian seated noise, and ±2° pitch/roll. Head commands stay at HOME; pushes and mass/CoM randomization are disabled. Seeds are paired across configurations, so variants are not independent statistical samples.
+
+**Success criterion.** Reach the target height within 12 mm, tilt within 15°, and root linear speed below 0.05 m/s continuously for 0.5 s; satisfy those conditions for at least 80% of the final second; remain finite; and avoid backward pitch below −45° or tilt above 60°. A transition must start from a valid held posture. Initial holds ignore the first 0.5 s of spawn settling. This is an endpoint/fall criterion, **not a gentleness criterion**.
+
+| Configuration | Stand hold | Sit hold | Descents | Ascents | Backward falls |
+|---|---:|---:|---:|---:|---:|
+| Legacy mass, unfiltered | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+| Legacy mass, runtime action path | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+| Calibrated mass, unfiltered | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+| Calibrated mass, runtime action path | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+| Legacy mass, runtime action path + 1 s stand-to-walk handoff | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+| Calibrated mass, runtime action path + 1 s stand-to-walk handoff | 32/32 | 32/32 | 64/64 | 64/64 | 0 |
+
+There are **384 rollouts and 768 transitions** across the six configurations. This small nominal test is not the 1,000-trial randomized acceptance test in stage 6. Maximum backward pitch across all rollouts was approximately 4.81°, well below the backward-fall threshold.
+
+For the calibrated runtime-action-path stand→sit→stand cycle, median verified arrival times were **1.56 s for sitting** and **1.05 s for standing**. With the 1 s walking-policy handoff, they were **1.54 s** and **1.09 s**. These times include the required 0.5 s of continuous endpoint stability.
+
+**Gentleness finding.** In the calibrated runtime-action-path cycle, peak sampled descent speed was approximately **0.542 m/s**, and rise speed **0.337 m/s**. The current training code's thresholds are 0.05 m/s down and 0.08 m/s up, implemented as reward penalties rather than enforced speed limits. The bundled policy exceeds both thresholds despite passing the endpoint test. Sampled peak motor torque reached approximately **0.978 Nm** during ascent. This is simulated actuator force, not a measured electrical or thermal overload. Height-derived speed and pitch-rate diagnostics use 50 Hz finite differences; they do not capture substep peaks.
+
+**Runtime source audit.** v0.3.6 uses 50 Hz inference, a 61D actor observation, action scale 1.0, and the expected joint mapping and posture flags. Its HOME differs from training by small rounded offsets (notably zero knees versus ±0.0049 rad). It feeds the previous raw action into observations, then applies EMA with old-value weights **0.35 for legs / 0.45 for head** before sending targets. The baseline's “runtime action path” reproduces this HOME/action/history math, not its full sensing pipeline.
+
+The runtime ends the stand phase after **1 s** and switches to its walking policy. The handoff experiment uses the bundled `xgoduck_walk.onnx`, resets policy action history on switching, and starts standing trials on walking idle. It also succeeds under these nominal conditions, so the timeout alone is **not established as the hardware failure's cause**. Its 0.2 s action-preparation hold, full MCU safety/recovery logic, and sensor fusion are not replayed.
+
+Runtime source references, pinned to the inspected release:
+
+- [Controller: policy selection, 50 Hz control, and stand timeout](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/30925cd1f8e5e78c5bbbf97efb89cf2f61182aee/python/controller.py)
+- [Policy: raw action history and EMA](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/30925cd1f8e5e78c5bbbf97efb89cf2f61182aee/python/policy.py)
+- [Observation layout, HOME, and IMU filtering constants](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/30925cd1f8e5e78c5bbbf97efb89cf2f61182aee/python/rl_core.py)
+
+**Artifacts.** [Machine-readable summary](reports/sitstand_1120_summary.json) includes model provenance, settings, limitations, and all 36 segment summaries. [Comparison plot](reports/sitstand_1120_baseline.png) shows the nominal height, pitch, and sampled actuator torque. Local raw per-step/per-joint traces are in `logs/evaluation/sitstand_1120_baseline/*.npz` and `logs/evaluation/sitstand_1120_handoff/*.npz` (ignored by Git). Copies of the two release ONNX files are retained under `logs/evaluation/sitstand_1120_baseline/source/` (also ignored).
+
+Reproduce from the repository root, using the pinned release models:
+
+```bash
+git clone --depth 1 --branch v0.3.6 https://github.com/LuwuDynamics/xgoduck_runtime_arduino.git /tmp/xgoduck-runtime-v036
+.venv/bin/python scripts/evaluate_sitstand.py --onnx /tmp/xgoduck-runtime-v036/python/xgoduck_sitstand.onnx --num-envs 32 --out logs/evaluation/sitstand_1120_baseline
+.venv/bin/python scripts/evaluate_sitstand.py --onnx /tmp/xgoduck-runtime-v036/python/xgoduck_sitstand.onnx --walking-onnx /tmp/xgoduck-runtime-v036/python/xgoduck_walk.onnx --filters runtime --num-envs 32 --out logs/evaluation/sitstand_1120_handoff
+```
+
+### 2b. Remaining diagnostic work before fine-tuning
+
+- [ ] Verify the installed ONNX hash and actual runtime overrides, servo KP/KD, loaded voltage/sag, IMU calibration, and action-filter settings. Firmware preserves existing servo gains; simulation assumes `kp_fw=5`.
+- [ ] Compare hardware target versus measured encoder trajectories, pitch/rate, and voltage/load through descent and ascent. Determine whether joint tracking fails before or after backward tipping.
+- [ ] Replay runtime IMU/velocity filtering against simulation or recorded sensor data. The nominal evaluation's ideal gravity and training observation delays do not reproduce the full runtime sensor pipeline.
+- [ ] Sweep plausible rearward trunk CoM and pitch inertia around the provisional calibration to test whether the unmeasured rear mass distribution explains tipping. Keep this diagnostic sweep separate from the nominal production model.
+- [ ] Select changes based on reproduced failures. Include transition speed/impact metrics in subsequent acceptance criteria; endpoint success alone hides fast descent. Obtain the corresponding trained `.pt` before PPO warm-start fine-tuning; the ONNX is sufficient for evaluation only.
+
+The calibrated mass change alone **did not reproduce the hardware failure**. Do not conclude that mass/CoM calibration is physically complete or that reward tuning is already sufficient. Revisit stage 3 targets using these diagnostics rather than assuming the inherited target necessarily makes the learned policy fall.
+
 ## 3. Establish a stable seated target and feasible transition
 
 The task currently retains Microduck's seated joint targets while retargeting trunk heights. Validate these against the calibrated XgoDuck model rather than assuming the inherited pose transfers.
@@ -159,3 +215,4 @@ Proposed acceptance targets:
 |---|---|---|
 | 2026-11-20 | Reviewed configuration and upstream reference; recorded final mass measurements; verified mass calibration is still pending; created this plan. | Apply and validate stage 1 mass calibration, documenting trunk/battery assumptions. |
 | 2026-11-20 | Applied and validated SitStand-only calibration: 870 g total, 275 g head/neck, provisional 307 g trunk; scaled inertias and retained geometry/CoM positions. | Stage 2: identify the tested checkpoint/runtime and evaluate both holds and both transitions on the calibrated model. |
+| 2026-11-20 | Evaluated the v0.3.6 bundled SitStand ONNX across six nominal mass/action/handoff configurations: 384 rollouts, 768 successful endpoint transitions, no backward falls. Recorded excessive transition speeds and remaining runtime/CoM uncertainties. | Stage 2b: identify the physical mismatch and define gentleness criteria before fine-tuning. |
