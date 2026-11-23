@@ -1,0 +1,745 @@
+{
+  "source_bundle": {
+    "schema": 1,
+    "id": "microduck_sitstand/vfhxgrum_2250",
+    "task_id": "Mjlab-SitStand-Flat-MicroDuck",
+    "experiment_name": "microduck_sitstand",
+    "iteration": 2250,
+    "checkpoint_file": "model_2250.pt",
+    "checkpoint_sha256": "94a9519a9192c27b363d7dac6aa95f7b707d298e337a06e0bac9d4bf68a65d28",
+    "source": {
+      "wandb_run": "pollen-robotics/mjlab_microduck/vfhxgrum",
+      "run_name": "BEST_2026-10-01_11-07-59_microduck_sitstand",
+      "created": "2026-10-01T09:08:06Z"
+    },
+    "code": {
+      "repo": "pollen-robotics/microduck_rl",
+      "commit": "77ffadf439d6c91128fb6da2be7da6a3a46e326e",
+      "on_remote": true,
+      "uncommitted_diff": "uncommitted.diff"
+    },
+    "command": [
+      "uv",
+      "run",
+      "train",
+      "Mjlab-SitStand-Flat-MicroDuck",
+      "--env.scene.num-envs",
+      "4096",
+      "--wandb-run-path",
+      "pollen-robotics/mjlab_microduck/jngaedcs",
+      "--wandb-checkpoint-name",
+      "model_1250.pt",
+      "--agent.resume",
+      "True",
+      "--agent.max_iterations",
+      "2250"
+    ],
+    "loaded_from": {
+      "wandb_run": "pollen-robotics/mjlab_microduck/jngaedcs",
+      "checkpoint": 1250
+    },
+    "teachers": {},
+    "onnx": [
+      {
+        "repo": "pollen-robotics/microduck-policies",
+        "file": "alpha_sitstand.onnx",
+        "revision": "665ae4eb20bfe13bca1ef4ea6d4bb6b4a096e448",
+        "sha256": "a6f102d9fd655782ba85bfffe18175c34621da719cffcdd673be7982a06fc254",
+        "verified": "actor weights bit-exact"
+      }
+    ]
+  },
+  "source_hub_revision": "64d28ce092253c509b51031ec7ccb53790a00d0d",
+  "checkpoint_sha256_verified": "94a9519a9192c27b363d7dac6aa95f7b707d298e337a06e0bac9d4bf68a65d28",
+  "packages": {
+    "mjlab": "1.3.0",
+    "rsl-rl-lib": "5.0.1",
+    "torch": "2.9.1"
+  },
+  "strict_actor_load": true,
+  "strict_critic_load": true,
+  "actor_onnx_equivalence": {
+    "samples": 258,
+    "max_abs_error": 2.980232238769531e-07,
+    "rtol": 0.0001,
+    "atol": 1e-05
+  },
+  "observation_layouts": {
+    "actor": {
+      "source_order": [
+        "base_ang_vel",
+        "projected_gravity",
+        "joint_pos",
+        "joint_vel",
+        "actions",
+        "command",
+        "head_command",
+        "body_command"
+      ],
+      "target_order": [
+        "base_ang_vel",
+        "projected_gravity",
+        "joint_pos",
+        "joint_vel",
+        "actions",
+        "command",
+        "head_command",
+        "body_command"
+      ],
+      "order_matches": true,
+      "target_term_dimensions": [
+        [
+          3
+        ],
+        [
+          3
+        ],
+        [
+          14
+        ],
+        [
+          14
+        ],
+        [
+          14
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ],
+        [
+          6
+        ]
+      ],
+      "source_input_dimension": 61,
+      "target_input_dimension": 61,
+      "terms": {
+        "base_ang_vel": {
+          "source_function": "mjlab_microduck.tasks.mdp.base_ang_vel_imu_misaligned",
+          "target_function": "mjlab_microduck.tasks.mdp.base_ang_vel_imu_misaligned",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "projected_gravity": {
+          "source_function": "mjlab_microduck.tasks.mdp.projected_gravity_imu_misaligned",
+          "target_function": "mjlab_microduck.tasks.mdp.projected_gravity_imu_misaligned",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "joint_pos": {
+          "source_function": "mjlab.envs.mdp.observations.joint_pos_rel",
+          "target_function": "mjlab_microduck.tasks.mdp.joint_pos_rel_backlash",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "joint_vel": {
+          "source_function": "mjlab.envs.mdp.observations.joint_vel_rel",
+          "target_function": "mjlab_microduck.tasks.mdp.joint_vel_rel_backlash",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "actions": {
+          "source_function": "mjlab.envs.mdp.observations.last_action",
+          "target_function": "mjlab.envs.mdp.observations.last_action",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "command": {
+          "source_function": "mjlab.envs.mdp.observations.generated_commands",
+          "target_function": "mjlab.envs.mdp.observations.generated_commands",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "head_command": {
+          "source_function": "mjlab.envs.mdp.observations.generated_commands",
+          "target_function": "mjlab.envs.mdp.observations.generated_commands",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "body_command": {
+          "source_function": "mjlab_microduck.tasks.mdp.zero_command_padding",
+          "target_function": "mjlab_microduck.tasks.mdp.zero_command_padding",
+          "source_scale": null,
+          "target_scale": null
+        }
+      }
+    },
+    "critic": {
+      "source_order": [
+        "base_lin_vel",
+        "base_ang_vel",
+        "projected_gravity",
+        "joint_pos",
+        "joint_vel",
+        "actions",
+        "command",
+        "foot_air_time",
+        "foot_contact",
+        "foot_contact_forces",
+        "head_command",
+        "body_command"
+      ],
+      "target_order": [
+        "base_lin_vel",
+        "base_ang_vel",
+        "projected_gravity",
+        "joint_pos",
+        "joint_vel",
+        "actions",
+        "command",
+        "foot_air_time",
+        "foot_contact",
+        "foot_contact_forces",
+        "head_command",
+        "body_command"
+      ],
+      "order_matches": true,
+      "target_term_dimensions": [
+        [
+          3
+        ],
+        [
+          3
+        ],
+        [
+          3
+        ],
+        [
+          14
+        ],
+        [
+          14
+        ],
+        [
+          14
+        ],
+        [
+          3
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          6
+        ],
+        [
+          4
+        ],
+        [
+          6
+        ]
+      ],
+      "source_input_dimension": 74,
+      "target_input_dimension": 74,
+      "terms": {
+        "base_lin_vel": {
+          "source_function": "mjlab.envs.mdp.observations.base_lin_vel",
+          "target_function": "mjlab.envs.mdp.observations.base_lin_vel",
+          "source_scale": 1,
+          "target_scale": 1.0
+        },
+        "base_ang_vel": {
+          "source_function": "mjlab.envs.mdp.observations.builtin_sensor",
+          "target_function": "mjlab.envs.mdp.observations.builtin_sensor",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "projected_gravity": {
+          "source_function": "mjlab.envs.mdp.observations.projected_gravity",
+          "target_function": "mjlab.envs.mdp.observations.projected_gravity",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "joint_pos": {
+          "source_function": "mjlab.envs.mdp.observations.joint_pos_rel",
+          "target_function": "mjlab_microduck.tasks.mdp.joint_pos_rel_backlash",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "joint_vel": {
+          "source_function": "mjlab.envs.mdp.observations.joint_vel_rel",
+          "target_function": "mjlab_microduck.tasks.mdp.joint_vel_rel_backlash",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "actions": {
+          "source_function": "mjlab.envs.mdp.observations.last_action",
+          "target_function": "mjlab.envs.mdp.observations.last_action",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "command": {
+          "source_function": "mjlab.envs.mdp.observations.generated_commands",
+          "target_function": "mjlab.envs.mdp.observations.generated_commands",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "foot_air_time": {
+          "source_function": "mjlab.tasks.velocity.mdp.observations.foot_air_time",
+          "target_function": "mjlab.tasks.velocity.mdp.observations.foot_air_time",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "foot_contact": {
+          "source_function": "mjlab.tasks.velocity.mdp.observations.foot_contact",
+          "target_function": "mjlab.tasks.velocity.mdp.observations.foot_contact",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "foot_contact_forces": {
+          "source_function": "mjlab.tasks.velocity.mdp.observations.foot_contact_forces",
+          "target_function": "mjlab.tasks.velocity.mdp.observations.foot_contact_forces",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "head_command": {
+          "source_function": "mjlab.envs.mdp.observations.generated_commands",
+          "target_function": "mjlab.envs.mdp.observations.generated_commands",
+          "source_scale": null,
+          "target_scale": null
+        },
+        "body_command": {
+          "source_function": "mjlab_microduck.tasks.mdp.zero_command_padding",
+          "target_function": "mjlab_microduck.tasks.mdp.zero_command_padding",
+          "source_scale": null,
+          "target_scale": null
+        }
+      }
+    }
+  },
+  "critic_order_basis": "Pinned SitStand source + identical mjlab 1.3.0 base factory; YAML mappings are sorted.",
+  "joints": {
+    "source_order": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "target_order": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "target_action_order": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "target_observation_order": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "order_matches": true,
+    "home": [
+      {
+        "name": "left_hip_yaw",
+        "source_rad": 0.0,
+        "target_rad": 0.0,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "left_hip_roll",
+        "source_rad": -0.0873,
+        "target_rad": -0.08730000257492065,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "left_hip_pitch",
+        "source_rad": -0.4579,
+        "target_rad": -0.3839724361896515,
+        "target_minus_source_deg": 4.23573637008667
+      },
+      {
+        "name": "left_knee",
+        "source_rad": -0.0049,
+        "target_rad": -0.004900000058114529,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "left_ankle",
+        "source_rad": 0.453,
+        "target_rad": 0.3839724361896515,
+        "target_minus_source_deg": -3.954988479614258
+      },
+      {
+        "name": "neck_pitch",
+        "source_rad": 0.3491,
+        "target_rad": 0.3490999937057495,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "head_pitch",
+        "source_rad": 0.3491,
+        "target_rad": 0.3490999937057495,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "head_yaw",
+        "source_rad": 0.0,
+        "target_rad": 0.0,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "head_roll",
+        "source_rad": 0.0,
+        "target_rad": 0.0,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "right_hip_yaw",
+        "source_rad": 0.0,
+        "target_rad": 0.0,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "right_hip_roll",
+        "source_rad": 0.0873,
+        "target_rad": 0.08730000257492065,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "right_hip_pitch",
+        "source_rad": 0.4579,
+        "target_rad": 0.3839724361896515,
+        "target_minus_source_deg": -4.23573637008667
+      },
+      {
+        "name": "right_knee",
+        "source_rad": 0.0049,
+        "target_rad": 0.004900000058114529,
+        "target_minus_source_deg": 0.0
+      },
+      {
+        "name": "right_ankle",
+        "source_rad": -0.453,
+        "target_rad": -0.3839724361896515,
+        "target_minus_source_deg": 3.954988479614258
+      }
+    ]
+  },
+  "source_action": {
+    "actuator_names": [
+      ".*"
+    ],
+    "clip": null,
+    "entity_name": "robot",
+    "offset": 0,
+    "preserve_order": false,
+    "scale": 1,
+    "transmission_type": "JOINT",
+    "use_default_offset": true
+  },
+  "target_action": {
+    "scale": 1.0,
+    "offset": 0.0,
+    "use_default_offset": true,
+    "preserve_order": false,
+    "clip": null
+  },
+  "source_posture_command": {
+    "class_type": "mjlab_microduck.tasks.mdp.SitStandCommand",
+    "debug_vis": false,
+    "entity_name": "robot",
+    "heading_command": false,
+    "heading_control_stiffness": 0.5,
+    "init_velocity_prob": 0,
+    "ramp_s": 2,
+    "ranges": {
+      "ang_vel_z": [
+        -0.5,
+        0.5
+      ],
+      "heading": null,
+      "lin_vel_x": [
+        -1,
+        1
+      ],
+      "lin_vel_y": [
+        -1,
+        1
+      ]
+    },
+    "rel_forward_envs": 0.2,
+    "rel_heading_envs": 0,
+    "rel_standing_envs": 0,
+    "rel_world_envs": 0,
+    "resampling_time_range": [
+      3.5,
+      6.5
+    ],
+    "sit_prob": 0.5,
+    "sit_z": 0.06,
+    "stand_z": 0.115,
+    "viz": {
+      "scale": 0.5,
+      "z_offset": 0.2
+    }
+  },
+  "target_posture_command": {
+    "sit_prob": 0.5,
+    "ramp_s": 2.0,
+    "sit_z": 0.085868,
+    "stand_z": 0.139158
+  },
+  "source_actuator": {
+    "armature": null,
+    "delay_hold_prob": 0,
+    "delay_max_lag": 6,
+    "delay_min_lag": 3,
+    "delay_per_env_phase": true,
+    "delay_update_period": 0,
+    "frictionloss": null,
+    "json_path": null,
+    "kp_fw": 200,
+    "model": "m6",
+    "motor_name": "xl330",
+    "stiff_frictionloss": true,
+    "target_names_expr": [
+      "^(?!passive_).*"
+    ],
+    "transmission_type": "JOINT",
+    "vin": null,
+    "vin_drop_gain_range": [
+      0,
+      0.2
+    ],
+    "vin_min": 6,
+    "vin_range": [
+      6.5,
+      8.2
+    ],
+    "viscous_damping": null
+  },
+  "target_actuator": {
+    "target_names_expr": [
+      "^(?!passive_).*"
+    ],
+    "transmission_type": "joint",
+    "armature": null,
+    "frictionloss": null,
+    "viscous_damping": null,
+    "delay_min_lag": 0,
+    "delay_max_lag": 6,
+    "delay_hold_prob": 0.0,
+    "delay_update_period": 0,
+    "delay_per_env_phase": true,
+    "motor_name": null,
+    "model": null,
+    "json_path": "/home/xin/xgoduck_rl/src/mjlab_microduck/robot/xgoduck/params/1910_m6.json",
+    "vin": null,
+    "kp_fw": 5.0,
+    "vin_range": [
+      7.4,
+      8.0
+    ],
+    "vin_drop_gain_range": [
+      0.0,
+      0.2
+    ],
+    "vin_min": 7.0,
+    "stiff_frictionloss": true
+  },
+  "target_actuator_identification": {
+    "kt": 0.6237611235393989,
+    "error_gain_ratio": 1.321738701681577,
+    "R": 4.910191564179625,
+    "armature": 0.0017819049974475338,
+    "q_offset": 0.032748109622048015,
+    "command_delay": 0.006005265953265889,
+    "friction_base": 0.015803365327573492,
+    "friction_stribeck": 0.009590058942953754,
+    "load_friction_motor": 0.06851344455161522,
+    "load_friction_external": 0.15822186020023804,
+    "load_friction_motor_stribeck": 0.12202539397513879,
+    "load_friction_external_stribeck": 0.07862542939514451,
+    "load_friction_motor_quad": 0.001967982142115035,
+    "load_friction_external_quad": 0.0008854091803780388,
+    "dtheta_stribeck": 0.946465692532126,
+    "alpha": 1.5220506664931566,
+    "friction_viscous": 0.0003101648214055195,
+    "max_velocity": 100.0,
+    "model": "m6",
+    "actuator": "sts3215"
+  },
+  "normalizer_counts": {
+    "actor": 221380608,
+    "critic": 221380608
+  },
+  "source_exploration_std": [
+    0.241216242313385,
+    0.22810423374176025,
+    0.2137869894504547,
+    0.19435466825962067,
+    0.20554956793785095,
+    0.2303684949874878,
+    0.27172642946243286,
+    0.29044342041015625,
+    0.2904844582080841,
+    0.2403571903705597,
+    0.22471660375595093,
+    0.20754872262477875,
+    0.1959724724292755,
+    0.2060670554637909
+  ],
+  "source_network_config": {
+    "actor": {
+      "activation": "elu",
+      "distribution_cfg": {
+        "init_std": 1,
+        "std_type": "scalar"
+      },
+      "hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "obs_normalization": true
+    },
+    "critic": {
+      "activation": "elu",
+      "hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "obs_normalization": true
+    },
+    "algorithm": {
+      "clip_param": 0.2,
+      "desired_kl": 0.01,
+      "entropy_coef": 0.01,
+      "gamma": 0.99,
+      "lam": 0.95,
+      "learning_rate": 0.001,
+      "max_grad_norm": 1,
+      "normalize_advantage_per_mini_batch": false,
+      "num_learning_epochs": 5,
+      "num_mini_batches": 4,
+      "optimizer": "adam",
+      "rnd_cfg": null,
+      "schedule": "adaptive",
+      "symmetry_cfg": null,
+      "use_clipped_value_loss": true,
+      "value_loss_coef": 1
+    }
+  },
+  "target_network_config": {
+    "actor": {
+      "hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "activation": "elu",
+      "obs_normalization": true,
+      "cnn_cfg": null,
+      "distribution_cfg": {
+        "class_name": "GaussianDistribution",
+        "init_std": 1.0,
+        "std_type": "scalar"
+      },
+      "rnn_type": null,
+      "rnn_hidden_dim": 256,
+      "rnn_num_layers": 1,
+      "class_name": "MLPModel"
+    },
+    "critic": {
+      "hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "activation": "elu",
+      "obs_normalization": true,
+      "cnn_cfg": null,
+      "distribution_cfg": null,
+      "rnn_type": null,
+      "rnn_hidden_dim": 256,
+      "rnn_num_layers": 1,
+      "class_name": "MLPModel"
+    },
+    "algorithm": {
+      "num_learning_epochs": 5,
+      "num_mini_batches": 4,
+      "learning_rate": 0.001,
+      "schedule": "adaptive",
+      "gamma": 0.99,
+      "lam": 0.95,
+      "entropy_coef": 0.01,
+      "desired_kl": 0.01,
+      "max_grad_norm": 1.0,
+      "value_loss_coef": 1.0,
+      "use_clipped_value_loss": true,
+      "clip_param": 0.2,
+      "normalize_advantage_per_mini_batch": false,
+      "optimizer": "adam",
+      "share_cnn_encoders": false,
+      "class_name": "PPO",
+      "symmetry_cfg": null
+    }
+  },
+  "control_hz": {
+    "source": 50.0,
+    "target": 50.0
+  },
+  "source_saved_iteration": 2250,
+  "source_saved_curriculum_counter": {
+    "common_step_counter": 54048
+  },
+  "target_nominal_mass_kg": 0.87,
+  "optimizer_state_present": true,
+  "limitations": [
+    "Only construction/reset and network inference; no rollout, optimization, or hardware test.",
+    "Strict loading establishes tensor compatibility, not critic accuracy or physical transfer.",
+    "Source and target HOME and physics differ; optimizer/curriculum must be handled deliberately."
+  ]
+}
