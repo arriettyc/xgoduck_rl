@@ -214,7 +214,107 @@ After selecting a pose, remeasure settled seated height and update pose rewards,
 
 ## 4. Fine-tune nominal SitStand transitions
 
-Use an isolated XgoDuck SitStand experiment. Warm-start from the existing XgoDuck SitStand checkpoint, preserving actor/value weights and observation normalizers. Reset optimizer and training/curriculum counters deliberately. Ordinary resume restores optimizer state and curriculum progress and can immediately activate mature disturbance and penalty stages.
+### Offline checkpoint compatibility comparison — 2026-11-23
+
+**Scope:** public upstream Microduck SitStand `model_2250.pt` from bundle
+`microduck_sitstand/vfhxgrum_2250`, compared with the current registered
+`Mjlab-SitStand-Flat-XgoDuck` task. This is not LuwuDynamics' missing XgoDuck
+`model_1250.pt`. Hardware diagnostics remain postponed until after November 26;
+this comparison performs network inference and environment construction/reset
+only, with no physics stepping, training, or robot access.
+
+**Result: both actor and critic are tensor-compatible and load strictly.**
+The actor's outputs match the bundle's verified reference ONNX over 258 test
+inputs (256 deterministic synthetic observations and two current XgoDuck reset
+observations), with maximum absolute error **2.98e-7**. All normalizer buffers
+and learned exploration standard deviations load without key/shape migration.
+This verifies loading/inference compatibility, not policy performance or critic
+accuracy on XgoDuck.
+
+| Item | Public Microduck checkpoint | Current XgoDuck task | Assessment |
+|---|---|---|---|
+| Actor | 61 → 512 → 256 → 128 → 14 | Same | Strict loading passes |
+| Critic | 74 → 512 → 256 → 128 → 1 | Same | Strict loading passes |
+| Activation | ELU | ELU | Matches |
+| Input normalization | Separate actor/critic mean, variance, std, count | Same buffers | All buffers load |
+| Exploration | Gaussian, 14 learned std parameters | Same parameter layout | Loads |
+| Actor observation slots | Angular velocity, projected gravity, joint position, joint velocity, previous action, twist, head command, body padding | Same ordered slots | Dimensions/order match |
+| Critic observation slots | Base linear velocity plus actor-like features and foot air/contact/force features | Same ordered slots | Dimensions/order match; physical distributions differ |
+| Joint/action order | 5 left leg, 4 head/neck, 5 right leg | Same resolved action and observation selections | Matches, excluding mouth |
+| Action convention | Radian offsets from HOME, scale 1.0 | Same convention | HOME itself differs |
+| Posture command | 0 = stand, 1 = sit; 2 s reward-target ramp | Same | Encoding matches |
+| Policy rate | 50 Hz | 50 Hz | Matches |
+| Joint feedback | Plain joint-relative position/velocity | Encoder-through-backlash position/velocity | Adaptation needed for ±1.5° gear play |
+| Servo physics | XL330 BAM, firmware gain 200 | HLS1910 identification (`sts3215`), firmware gain 5 | Different hardware models; gain values are not directly comparable stiffness ratios |
+| Training voltage/delay | 6.5–8.2 V; 15–30 ms actuator delay | 7.4–8.0 V; 0–30 ms delay | Different training distributions |
+| Reward height targets | Stand 0.115 m; sit 0.060 m | Stand 0.139158 m; sit 0.085868 m | Different task/value targets |
+| Optimizer | Adam state is present | Adam supported | Reset state for cross-robot warm start |
+| Saved progress | Iteration 2250; curriculum counter 54048 | New XgoDuck adaptation run | Restart deliberately |
+
+The critic order was reconstructed from the exact pinned SitStand source and
+the same pinned mjlab 1.3.0 base factory; the bundle's W&B YAML alphabetizes
+mapping keys and must not be treated as observation order. The actor order was
+also verified against the reference ONNX metadata. The checker resolves target
+term dimensions, action selections, and observation joint selections from the
+actual environment.
+
+Important HOME differences (radians; only materially different joints shown):
+
+| Joint | Microduck HOME | XgoDuck HOME | XgoDuck minus Microduck |
+|---|---:|---:|---:|
+| Left hip pitch | −0.457900 | −0.383972 | +4.236° |
+| Right hip pitch | +0.457900 | +0.383972 | −4.236° |
+| Left ankle | +0.453000 | +0.383972 | −3.955° |
+| Right ankle | −0.453000 | −0.383972 | +3.955° |
+
+Since HOME affects both relative joint observations and absolute action targets,
+loading unchanged weights into XgoDuck reinterprets the pose reference. That can
+be an intentional adaptation starting point, but it does not preserve the
+source policy's absolute target trajectory. If exact absolute-target parity is
+desired for a comparison adapter, use `q_rel_source = q_rel_target + HOME_target
+− HOME_source` and `action_target = action_source + HOME_source − HOME_target`
+at scale 1.0; preserve previous *source* action in the source policy's history.
+
+**Safe warm-start procedure for option 3:** load this matched actor/critic pair
+and their normalizers; create a fresh optimizer; explicitly reset iteration and
+curriculum progress; evaluate on XgoDuck before updating weights; refit/validate
+the critic for XgoDuck returns before substantial actor updates. The public
+critic is usable as an initialization, not assumed correct for another robot or
+for a separately recovered XgoDuck actor. Do not mix its optimizer state into a
+different actor. In the installed runner, the saved environment counter is
+restored separately from the iteration-loading flag, so a custom warm-start
+must reset that counter explicitly as well.
+
+Files and reproducibility:
+
+- [Compatibility report](reports/sitstand_checkpoint_compatibility.json): strict
+  load, numerical parity, observation layouts, HOME values, source/target
+  configurations, hashes, package versions, and limitations.
+- `scripts/check_sitstand_checkpoint_compatibility.py`: reproducible checker;
+  uses `torch.load(weights_only=True)` and `yaml.safe_load`.
+- Local bundle: `logs/checkpoint_compatibility/microduck_sitstand_vfhxgrum_2250/`.
+  Includes the downloaded full `model_2250.pt`, reference ONNX, resolved training
+  YAML, source snapshots, and provenance. Model files remain ignored by Git.
+- Public [bundle repository](https://huggingface.co/pollen-robotics/microduck-training),
+  Hub revision `64d28ce092253c509b51031ec7ccb53790a00d0d`, training code commit
+  `77ffadf439d6c91128fb6da2be7da6a3a46e326e`.
+- Verified checkpoint SHA-256:
+  `94a9519a9192c27b363d7dac6aa95f7b707d298e337a06e0bac9d4bf68a65d28`.
+
+```bash
+.venv/bin/python scripts/check_sitstand_checkpoint_compatibility.py --bundle-dir logs/checkpoint_compatibility/microduck_sitstand_vfhxgrum_2250
+```
+
+### Planned training experiment
+
+Use an isolated XgoDuck SitStand experiment. Select the initializer after the
+pending diagnostics: recover the XgoDuck actor from ONNX with a fresh critic,
+or use the compatible public Microduck actor/critic pair above as an alternative.
+The original trained XgoDuck `.pt` is still unavailable. Preserve the selected
+actor's normalization and validate/refit its critic. Reset optimizer and
+training/curriculum counters deliberately. Ordinary resume restores optimizer
+state and curriculum progress and can immediately activate mature disturbance
+and penalty stages.
 
 | Setting | Initial experiment |
 |---|---|
@@ -268,3 +368,4 @@ Proposed acceptance targets:
 | 2026-11-20 | Reviewed configuration and upstream reference; recorded final mass measurements; verified mass calibration is still pending; created this plan. | Apply and validate stage 1 mass calibration, documenting trunk/battery assumptions. |
 | 2026-11-20 | Applied and validated SitStand-only calibration: 870 g total, 275 g head/neck, provisional 307 g trunk; scaled inertias and retained geometry/CoM positions. | Stage 2: identify the tested checkpoint/runtime and evaluate both holds and both transitions on the calibrated model. |
 | 2026-11-20 | Evaluated the v0.3.6 bundled SitStand ONNX across six nominal mass/action/handoff configurations: 384 rollouts, 768 successful endpoint transitions, no backward falls. Recorded excessive transition speeds and remaining runtime/CoM uncertainties. | Stage 2b: identify the physical mismatch and define gentleness criteria before fine-tuning. |
+| 2026-11-23 | Downloaded and hash-verified public Microduck SitStand `model_2250.pt`; actor and critic strictly load into current XgoDuck networks; actor matches reference ONNX within 2.98e-7 over 258 inputs. Documented HOME, backlash, physics, and resume-state differences. | Hardware mismatch investigation remains postponed; choose warm-start strategy after the pending diagnostics. |
