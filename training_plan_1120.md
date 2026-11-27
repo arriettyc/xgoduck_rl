@@ -198,6 +198,43 @@ performed here.
 Raw local traces are in `logs/evaluation/sitstand_1126_tag_home_75v/` and
 `logs/evaluation/sitstand_1126_installed_home_75v/`.
 
+#### Direct back-down plate recording — 2026-11-26
+
+Read `/api/version` and `/api/status` directly at the user-provided LAN endpoint.
+Captured 100 snapshots at 20 Hz over approximately 5 s, with 100 distinct MCU
+sequence numbers. Every snapshot remained in `off` mode with torque disabled;
+inference count did not increase, calibration remained identical, and joint
+angles did not vary. All requests were GETs. The app's background command count
+continued increasing; no control or configuration endpoint was called.
+
+The user described the pose as back-down on a horizontal calibration plate.
+The filtered gravity mean was approximately `[-0.9986, 0.0209, 0.0484]`, which is
+qualitatively consistent with back-down. No independent torso angle was supplied.
+
+| Stationary pose | Raw acceleration magnitude | Corrected magnitude |
+|---|---:|---:|
+| Earlier standing hold (user-provided) | 9.709 m/s² | 9.776 m/s² |
+| Back-down plate (direct capture) | 10.942 m/s² | 8.754 m/s² |
+
+A pure mounting rotation preserves vector magnitude; it cannot explain the
+orientation-dependent norm change. The current additive correction does not
+produce a consistent approximately 1 g reading across these stationary poses.
+This supports further bias/scale/mounting investigation, not an immediate
+calibration change or a unique diagnosis. It does not prove that the torso in
+the earlier standing capture was physically tilted 13°.
+
+Acceleration was stable; one gyro-X sample reached approximately 8.02°/s after
+correction, so retain the raw data rather than treating every gyro sample as a
+perfectly motionless reference. Rest voltage was 7.9–8.0 V, higher than in the
+earlier hold recording. Torqueless joint targets are retained values, not
+evidence of active position tracking on the plate.
+
+[Direct capture summary](reports/sitstand_plate_capture_1126.json). Full local
+snapshots are retained under the raw-log directory recorded in that summary.
+Next: establish independent torso orientation and collect additional known
+stationary orientations to separate sensor offset/scale from mounting rotation.
+Do not apply the standing calibration routine in this lying pose.
+
 ## 3. Establish a stable seated target and feasible transition
 
 The task currently retains Microduck's seated joint targets while retargeting trunk heights. Validate these against the calibrated XgoDuck model rather than assuming the inherited pose transfers.
