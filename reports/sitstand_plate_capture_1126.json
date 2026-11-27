@@ -1,0 +1,368 @@
+{
+  "client_date": "2026-11-26",
+  "pose": "User states back-down on horizontal calibration plate; no independent torso angle supplied.",
+  "source": "Direct read-only GET /api/version and /api/status at user-provided LAN endpoint.",
+  "raw_log_directory": "logs/hardware/plate_back_down/1795758658316045872",
+  "capture_utc": "2026-11-27T05:51:03.316672+00:00",
+  "summary": {
+    "version": {
+      "version": "0.3.6"
+    },
+    "samples": 100,
+    "elapsed_s": 4.983251054014545,
+    "modes": [
+      "off"
+    ],
+    "torque_enabled_any": false,
+    "unique_mcu_seq": 100,
+    "signals": {
+      "acc": {
+        "mean": [
+          -10.916646118164065,
+          -0.07763916015625001,
+          0.7370277099609376
+        ],
+        "std": [
+          0.012421080051032872,
+          0.008456502990434328,
+          0.008666573475354244
+        ],
+        "range": [
+          0.05323486328125071,
+          0.04246826171875001,
+          0.03768310546874998
+        ],
+        "mean_vector_norm": 10.94177317228184
+      },
+      "acc_corrected": {
+        "mean": [
+          -8.74276142818827,
+          0.154613621671435,
+          0.42264378679302445
+        ],
+        "std": [
+          0.01242108005103287,
+          0.008456502990434328,
+          0.008666573475354248
+        ],
+        "range": [
+          0.05323486328125071,
+          0.04246826171875001,
+          0.03768310546874998
+        ],
+        "mean_vector_norm": 8.754336670058887
+      },
+      "gyro": {
+        "mean": [
+          -0.1384375,
+          -0.819375,
+          3.166875
+        ],
+        "std": [
+          0.812755428599988,
+          0.31658517317619284,
+          0.22396550376118193
+        ],
+        "range": [
+          8.375,
+          1.34375,
+          1.0625
+        ],
+        "mean_vector_norm": 3.2740857651650255
+      },
+      "gyro_corrected": {
+        "mean": [
+          0.10055897887323968,
+          -0.03174295774647898,
+          0.3279665492957749
+        ],
+        "std": [
+          0.812755428599988,
+          0.3165851731761928,
+          0.223965503761182
+        ],
+        "range": [
+          8.375,
+          1.34375,
+          1.0625
+        ],
+        "mean_vector_norm": 0.34450222213434467
+      },
+      "gravity": {
+        "mean": [
+          -0.998608037572513,
+          0.020913411383159528,
+          0.048419917121953836
+        ],
+        "std": [
+          1.624875392765669e-05,
+          0.00023218334589722285,
+          0.00027197916924124053
+        ],
+        "range": [
+          7.732043240815667e-05,
+          0.0009800701039604752,
+          0.0012495901126351738
+        ],
+        "mean_vector_norm": 0.9999999359270999
+      },
+      "angles": {
+        "mean": [
+          -4.747252941131592,
+          2.1098902225494385,
+          12.659340858459473,
+          22.681318283081055,
+          12.747252464294434,
+          3.692307710647583,
+          0.35164836049079895,
+          -7.912087917327881,
+          -10.10988998413086,
+          -4.131868362426758,
+          -9.230769157409668,
+          6.593406677246094,
+          -0.8791208863258362,
+          -1.1428571939468384,
+          0.0
+        ],
+        "std": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "velocities": {
+        "mean": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "targets": {
+        "mean": [
+          0.0,
+          -5.0,
+          -22.0,
+          -2.0,
+          20.0,
+          0.0,
+          5.0,
+          22.0,
+          2.0,
+          -20.0,
+          20.0,
+          20.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "inferred_delta": 0,
+    "received_delta": 495,
+    "sent_delta": 241,
+    "loop_missed_delta": 6,
+    "sequence_gaps_delta": 0,
+    "bad_frames_delta": 0,
+    "voltage_range_v": [
+      7.9,
+      8.0
+    ],
+    "calibration_unchanged": true,
+    "deployment": {
+      "reference": "rl/raspi_deploy",
+      "control_hz": 50.0,
+      "home_deg": [
+        0.0,
+        -5.0,
+        -22.0,
+        -2.0,
+        20.0,
+        20.0,
+        20.0,
+        0.0,
+        0.0,
+        0.0,
+        5.0,
+        22.0,
+        2.0,
+        -20.0
+      ],
+      "default_deg": [
+        0.0,
+        -5.0,
+        -22.0,
+        -2.0,
+        20.0,
+        0.0,
+        5.0,
+        22.0,
+        2.0,
+        -20.0,
+        20.0,
+        20.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "action_scale": 1.0,
+      "action_alpha": 0.35,
+      "action_alpha_head": 0.45,
+      "gyro_alpha": 0.5,
+      "velocity_alpha": 0.4,
+      "gravity_tau_s": 0.3,
+      "imu_bias_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "imu_acc_offset_ms2": [
+        2.1738846899757927,
+        0.2322527818276849,
+        -0.3143839231679131
+      ],
+      "command_acc_x_bias_ms2": 0.0,
+      "filter_clock": "mcu_imu",
+      "snapshot": "latest",
+      "command_timeout_enabled": false,
+      "imu_stale_ms": 500.0,
+      "gyro_zero_dps": [
+        -0.23899647887323944,
+        -0.7876320422535211,
+        2.8389084507042255
+      ]
+    }
+  },
+  "previous_standing_reference": {
+    "source": "Earlier user-provided fixed-pose hold recording; not independently captured here.",
+    "raw_acc_mean_ms2": [
+      -2.1411,
+      -0.4769,
+      -9.4584
+    ],
+    "corrected_acc_mean_ms2": [
+      0.0328,
+      -0.2446,
+      -9.7728
+    ],
+    "independent_torso_orientation_verified": false,
+    "raw_acc_mean_ms2_norm": 9.709432186281543,
+    "corrected_acc_mean_ms2_norm": 9.775915549962571
+  },
+  "assessment": [
+    "No calibration, gains, mode, torque, or motion changes were requested; GET requests only.",
+    "Gravity estimate points predominantly along negative X, qualitatively consistent with back-down.",
+    "Stationary corrected magnitude differs by about 10% between poses; pure mounting rotation cannot alter vector norm.",
+    "These measurements do not identify unique accelerometer bias, scale, or mounting rotation, and do not prove that the standing torso leaned 13 degrees.",
+    "One gyro-X outlier occurred; acceleration remained stable. Off-mode joint targets are retained values, not evidence of active position holding.",
+    "Battery is now 7.9\u20138.0 V at rest, unlike the earlier 7.4\u20137.5 V hold; loaded sag remains unmeasured."
+  ]
+}
