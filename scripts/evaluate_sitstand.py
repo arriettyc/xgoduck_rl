@@ -40,6 +40,10 @@ def arguments():
     parser.add_argument("--walking-onnx", type=Path,
                         help="Optionally switch stand commands to this walking policy after 1 s")
     parser.add_argument("--stand-handoff-s", type=float, default=1.)
+    parser.add_argument("--runtime-home-deg", type=float, nargs=14,
+                        help="Override runtime HOME in policy order; affects observations and targets")
+    parser.add_argument("--voltage-v", type=float, default=7.7,
+                        help="Nominal supply voltage before the modeled load sag")
     parser.add_argument("--masses", nargs="+", choices=("legacy", "calibrated"),
                         default=["legacy", "calibrated"])
     parser.add_argument("--filters", nargs="+", choices=("none", "runtime"),
@@ -92,7 +96,7 @@ def configure(args, mass):
     if mass == "legacy":
         robot.spec_fn = get_standup_spec  # Same full-contact XML, no mass overlay.
     robot.articulation.actuators = tuple(replace(
-        actuator, vin_range=(7.7, 7.7), vin_drop_gain_range=(.1, .1),
+        actuator, vin_range=(args.voltage_v, args.voltage_v), vin_drop_gain_range=(.1, .1),
         delay_min_lag=3, delay_max_lag=3) for actuator in robot.articulation.actuators)
     cfg.commands["twist"].resampling_time_range = (1e9, 1e9)
     cfg.commands["head_pose"].resampling_time_range = (1e9, 1e9)
@@ -151,7 +155,7 @@ def summarize(trace, target, start, stop, dt, eligible):
 
 
 def run_cycle(env, policy, initial, filter_mode, duration, seed, output,
-              walking_policy=None, handoff_s=1.):
+              walking_policy=None, handoff_s=1., runtime_home_deg=None):
     n, dt = env.num_envs, env.step_dt
     params = env.event_manager.get_term_cfg("set_ground_state").params
     params.update(sitting_prob=float(initial == "sit"), standing_prob=float(initial == "stand"))
@@ -163,6 +167,7 @@ def run_cycle(env, policy, initial, filter_mode, duration, seed, output,
     sim_home = robot.data.default_joint_pos[:, servo_ids].cpu().numpy()
     # Runtime v0.3.6 uses HOME_DEG rather than rounded ONNX metadata.
     runtime_home = np.deg2rad(np.array(
+        runtime_home_deg if runtime_home_deg is not None else
         [0, -5, -22, 0, 22, 20, 20, 0, 0, 0, 5, 22, 0, -22], dtype=np.float32))
     home = runtime_home if filter_mode == "runtime" else sim_home
     alphas = np.zeros((1, 14), dtype=np.float32)
@@ -266,6 +271,11 @@ def main():
     args = arguments()
     if args.num_envs < 1 or args.segment_s < 1:
         raise ValueError("Need positive environment count and at least 1 s per segment")
+    if not math.isfinite(args.voltage_v) or args.voltage_v < 7.0:
+        raise ValueError("Supply must be finite and >= the configured 7.0 V sag floor")
+    if args.runtime_home_deg is not None:
+        if args.filters != ["runtime"] or not np.isfinite(args.runtime_home_deg).all():
+            raise ValueError("A HOME override requires finite values and --filters runtime")
     args.out.mkdir(parents=True, exist_ok=True)
     policy = OnnxPolicy(args.onnx)
     walking_policy = OnnxPolicy(args.walking_onnx) if args.walking_onnx else None
@@ -277,7 +287,8 @@ def main():
         "policy_metadata": policy.metadata,
         "git_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "settings": {"num_envs": args.num_envs, "seed": args.seed, "segment_s": args.segment_s,
-                     "foot_friction": .5, "voltage_v": 7.7, "sag_gain": .1,
+                     "foot_friction": .5, "voltage_v": args.voltage_v, "sag_gain": .1,
+                     "runtime_home_deg_override": args.runtime_home_deg,
                      "actuator_delay_ms": 15, "reset_joint_noise_rad": .01,
                      "reset_tilt_deg": 2, "head_command": "HOME", "pushes": False,
                      "observation_noise": False, "mass_com_randomization": False},
@@ -307,7 +318,8 @@ def main():
                 for initial in ("stand", "sit"):
                     report["experiments"][key][initial + "_cycle"] = run_cycle(
                         env, policy, initial, filter_mode, args.segment_s, args.seed,
-                        args.out / f"{key}_{initial}.npz", walking_policy, args.stand_handoff_s)
+                        args.out / f"{key}_{initial}.npz", walking_policy, args.stand_handoff_s,
+                        args.runtime_home_deg)
                     (args.out / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
             finally:
                 env.close()
