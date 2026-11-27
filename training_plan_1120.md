@@ -138,13 +138,65 @@ git clone --depth 1 --branch v0.3.6 https://github.com/LuwuDynamics/xgoduck_runt
 
 ### 2b. Remaining diagnostic work before fine-tuning
 
-- [ ] Verify the installed ONNX hash and actual runtime overrides, servo KP/KD, loaded voltage/sag, IMU calibration, and action-filter settings. Firmware preserves existing servo gains; simulation assumes `kp_fw=5`.
+- [x] Record the Arduino agent's read-only hardware report on 2026-11-26: installed ONNX hash matches the evaluated artifact; all 15 servos online; KP 5 / KD 10; runtime action scale/filter defaults; approximately 7.5 V at rest; shadow mode with torque off. This is user-supplied evidence, not a direct connection from this workspace.
+- [x] Resolve runtime version ambiguity: installed build commit `3f9db11c376030d234c5b1299862211e87b590f1` changes knee/ankle HOME relative to the earlier tag commit. Test the installed HOME offline at 7.5 V alongside a paired tag-HOME reference.
+- [ ] Validate firmware D behavior and the HLS1910 identification conditions. KP 5 matches simulation, but the current BAM voltage controller has no explicit mapping for firmware KD 10; its `kd_scale` scales electrical back-EMF and is not the servo D register. Do not change hardware gains based on the register value alone.
+- [ ] Verify loaded voltage/sag, calibration accuracy, live resolved HOME, and runtime timing under the actual transition. Rest voltage and a cumulative missed-loop count do not establish dynamic behavior.
 - [ ] Compare hardware target versus measured encoder trajectories, pitch/rate, and voltage/load through descent and ascent. Determine whether joint tracking fails before or after backward tipping.
 - [ ] Replay runtime IMU/velocity filtering against simulation or recorded sensor data. The nominal evaluation's ideal gravity and training observation delays do not reproduce the full runtime sensor pipeline.
 - [ ] Sweep plausible rearward trunk CoM and pitch inertia around the provisional calibration to test whether the unmeasured rear mass distribution explains tipping. Keep this diagnostic sweep separate from the nominal production model.
 - [ ] Select changes based on reproduced failures. Include transition speed/impact metrics in subsequent acceptance criteria; endpoint success alone hides fast descent. Obtain the corresponding trained `.pt` before PPO warm-start fine-tuning; the ONNX is sufficient for evaluation only.
 
 The calibrated mass change alone **did not reproduce the hardware failure**. Do not conclude that mass/CoM calibration is physically complete or that reward tuning is already sufficient. Revisit stage 3 targets using these diagnostics rather than assuming the inherited target necessarily makes the learned policy fall.
+
+#### Hardware evidence and HOME comparison — 2026-11-26
+
+The installed ONNX SHA-256 is the same as our tested v0.3.6 artifact. However,
+the installed runtime's source commit is newer than the previously inspected
+version tag. Its `DEFAULT_DEG`, inherited by SitStand's `HOME_DEG`, differs:
+
+| Joint | Previously simulated tag | Installed build |
+|---|---:|---:|
+| Left knee | 0° | −2° |
+| Right knee | 0° | +2° |
+| Left ankle | +22° | +20° |
+| Right ankle | −22° | −20° |
+
+This reference affects both relative joint observations and absolute servo
+targets; confirming the ONNX hash does not confirm identical closed-loop
+behavior. [Pinned source comparison](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/compare/30925cd1f8e5e78c5bbbf97efb89cf2f61182aee...3f9db11c376030d234c5b1299862211e87b590f1).
+
+Added evaluator options `--runtime-home-deg` (14 values in policy order) and
+`--voltage-v`. At 7.5 V, calibrated mass, runtime action smoothing, and the 1 s
+walking-policy handoff, both the tag HOME and installed HOME passed all 16
+standing-start and 16 seated-start cycles: **128 transitions total, no backward
+falls** across the two conditions. Worst backward pitch increased from 4.40°
+to 6.00° with installed HOME. This is a verified mismatch, **not an established
+cause of the physical fall**. Ideal gravity and training observation delays
+remain in these tests; actual firmware D response and IMU correction are not
+replayed.
+
+The read-only IMU snapshot was taken with the robot tilted, so it cannot verify
+upright alignment. Raw acceleration magnitude was approximately 8.72 m/s²;
+after additive correction it was 10.78 m/s². The stored +2.174 m/s² X correction
+is substantial, but that alone cannot distinguish a real sensor bias from a
+tilted calibration reference. The inspected calibration code estimates an
+additive offset to make the calibration pose read `[0, 0, -9.8]`; it does not
+estimate a general mounting rotation. Preserve the calibration file and collect
+stationary measurements with the torso independently verified upright and at
+additional supported orientations before deciding whether to recalibrate.
+
+The existing 4 Hz status logger is insufficient to establish the ordering of
+tracking error, voltage sag, and tipping during a roughly 1 s transition.
+Prepare timestamped feedback logging at 50–100 Hz without overloading control,
+preferably at the receive callback. Preserve unique MCU timestamps and report
+command/IMU age and missed-loop increments over a known interval. Hardware
+motion, gain changes, and recalibration remain separate actions; none were
+performed here.
+
+[Hardware evidence and paired simulation summary](reports/sitstand_hardware_check_1126.json).
+Raw local traces are in `logs/evaluation/sitstand_1126_tag_home_75v/` and
+`logs/evaluation/sitstand_1126_installed_home_75v/`.
 
 ## 3. Establish a stable seated target and feasible transition
 
